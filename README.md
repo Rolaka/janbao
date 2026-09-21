@@ -45,10 +45,16 @@ endpoints. `S3_PREFIX` and `S3_CDN_BASE_URL` are optional. Without a CDN URL, th
 application reads private objects through signed S3 requests and streams them to clients.
 Avatars are stored at `<prefix>/avatars/<userId>` and replaced on update, matching
 the existing pCloud layout. Application URLs retain `/avatar/<userId>/<sha>.<ext>`.
-Direct S3/CDN object responses require cache revalidation; configure the CDN to honor
-origin cache headers. Proxied application responses retain their existing cache policy.
-Avatar routes proxy and verify the stored bytes against the requested SHA, even when
-a CDN is configured. Pending uploads are hidden and concurrent uploads are rejected.
+With `S3_CDN_BASE_URL` configured, avatar routes validate the published database version
+and return a non-cacheable 302 to `<cdn>/<prefix>/avatars/<userId>?v=<avatarFileId>`.
+This includes imported avatars with version `1`. The CDN serves the image and handles
+ETag revalidation; include the `v` query parameter in its cache key. New avatar writes
+set `Cache-Control: public, max-age=300, must-revalidate`; configure the CDN to honor
+this finite TTL. Existing objects retain their current metadata until rewritten or
+updated separately, so this application change alone does not change their CDN TTL.
+The user-ID object is mutable: old CDN version URLs may return newer bytes after expiry,
+and must not be configured as immutable. Without a CDN, avatar routes proxy and verify
+the stored bytes against the requested SHA. Pending uploads are hidden and concurrent uploads are rejected.
 An interrupted process can leave a publication lock: stop avatar writers before
 reconciling the fixed object and database metadata; do not clear a lock while its
 writer may still be running. Cleanup failures log the object path, and failed

@@ -112,7 +112,7 @@ export function s3PublicUrl(cfg: S3Config, path: string, cacheBust = ''): string
 
 export function s3CacheControlForPath(path: string): string {
 	return path.replace(/^\/+/, '').startsWith('avatars/')
-		? 'no-cache, max-age=0, must-revalidate'
+		? 'public, max-age=300, must-revalidate'
 		: 'public, max-age=31536000, immutable';
 }
 

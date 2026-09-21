@@ -16,9 +16,9 @@ import {
  * the content sha and <ext> is derived client-side from users.avatarContentType:
  * the real extension lets CDN edge caches that key on file extensions
  * (Cloudflare's default set) cache it without a cache-everything rule, and the
- * sha makes a re-upload a new URL (guaranteed cache miss). The content-type is
- * read from users.avatarContentType (defaulting to image/webp), so the storage
- * body streams straight through with no buffering.
+ * sha makes a re-upload a new URL. With an S3 CDN configured, redirect to the
+ * user-ID object with ?v=<publishedFileId>; the CDN owns caching and ETag
+ * revalidation. Otherwise proxy the bytes and verify SHA-based versions.
  */
 export const GET: RequestHandler = async (event) => {
 	const { userId: userIdParam, file } = event.params;

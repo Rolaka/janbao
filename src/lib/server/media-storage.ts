@@ -142,7 +142,7 @@ export async function mediaResponse(
 	options: MediaResponseOptions
 ): Promise<Response> {
 	const publicUrl = mediaPublicUrl(cfg, options.path, options.cacheBust ?? '');
-	if (publicUrl && !options.verifiedAvatarId) {
+	if (publicUrl) {
 		return new Response(null, {
 			status: 302,
 			headers: { Location: publicUrl, 'Cache-Control': 'private, no-store' }

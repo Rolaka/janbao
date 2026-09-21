@@ -61,7 +61,7 @@ describe('media storage selection', () => {
 		expect(mediaStorageConfigurationError(cfg)).toContain('pcloud');
 	});
 
-	test('CDN redirects bust avatar cache with the content hash', async () => {
+	test('CDN redirects published avatars without reading storage', async () => {
 		const cfg = resolveMediaStorageConfig({
 			MEDIA_STORAGE_PROVIDER: 's3',
 			S3_ENDPOINT: 'https://s3.example.com',
@@ -71,15 +71,28 @@ describe('media storage selection', () => {
 			S3_REGION: 'us-east-1',
 			S3_CDN_BASE_URL: 'https://cdn.example.com'
 		});
-		const response = await mediaResponse(cfg, {
-			path: 'avatars/7',
-			contentType: 'image/png',
-			cacheBust: avatarHash
-		});
-		expect(response.status).toBe(302);
-		expect(response.headers.get('location')).toBe(
-			`https://cdn.example.com/avatars/7?v=${avatarHash}`
-		);
+		const original = globalThis.fetch;
+		globalThis.fetch = (async (input): Promise<Response> => {
+			void input;
+			throw new Error('CDN redirects must not fetch storage');
+		}) as typeof fetch;
+		try {
+			for (const version of [avatarHash, '1']) {
+				const response = await mediaResponse(cfg, {
+					path: 'avatars/7',
+					contentType: 'image/png',
+					cacheBust: version,
+					verifiedAvatarId: version
+				});
+				expect(response.status).toBe(302);
+				expect(response.headers.get('location')).toBe(
+					`https://cdn.example.com/avatars/7?v=${version}`
+				);
+				expect(response.headers.get('cache-control')).toBe('private, no-store');
+			}
+		} finally {
+			globalThis.fetch = original;
+		}
 	});
 });
 

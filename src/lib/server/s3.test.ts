@@ -86,11 +86,11 @@ describe('S3 object cache headers', () => {
 			return new Response(null, { status: 200 });
 		}) as typeof fetch;
 		try {
-			expect(s3CacheControlForPath('avatars/7')).toBe('no-cache, max-age=0, must-revalidate');
+			expect(s3CacheControlForPath('avatars/7')).toBe('public, max-age=300, must-revalidate');
 			await s3PutBytes(baseConfig(), 'avatars/7', new Uint8Array([1]), 'image/png');
 			await s3PutBytes(baseConfig(), 'attachments/hash', new Uint8Array([1]), 'image/png');
 			expect(policies).toEqual([
-				'no-cache, max-age=0, must-revalidate',
+				'public, max-age=300, must-revalidate',
 				'public, max-age=31536000, immutable'
 			]);
 		} finally {
